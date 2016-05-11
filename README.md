@@ -1,21 +1,24 @@
-# Week 7 tutorial
+# Week 10 tutorial
 
-This week, there's not (yet) a set of tests.
+This week, there's not a set of tests.
 Let's put in a slightly higher level mission...
 
-1. If you don't already know it, read up on what the game "FizzBuzz" is
+First, watch the video on backpressure (on Moodle) and then read the link to reactive-streams.org
 
-2. In `MyApp`, set up a ring of `Terrible` players and start them playing. They will get it all wrong, but won't even know. But they should print it out to the console, so you'll see you have some Actors talking to each other.
+Akka provides a reactive streams implementation called... Akka Streams.
 
-   Q: If you do this naively (just sending the messages) it's theoretically possible for an actor to be slow responding to the `NextPlayerIs` message, and not actually have set themselves up when the game starts.
-   How could you edit this so it's all still asynchronous, but you can *guaruntee* every player is ready before the game begins?
+This is the guide we'll work through:
 
-   Hint: Terrible will need to send a message in reply to the NextPlayerIs message, and then `MyApp` might want to use `?` instead of `!` and chain some futures together...
+http://doc.akka.io/docs/akka/2.4.4/scala/stream/stream-quickstart.html#stream-quickstart-scala
 
-3. In `Exercise`, write a player who will play the game correctly. Don't worry yet about dealing with the Terrible players who get it wrong, just get your player to give the right next message (and print it out)
+Your mission (in MyApp.scala):
 
-4. Now get your player to think about the message its received, and to send a Wrong message back to the previous player if they gave the wrong answer.
+1. To create a source producing random numbers (ok, start with just a source of numbers in order as they do in the tutorial)
 
-5. Add a Referee actor. Now, instead of sending a Wrong message back to the previous player, you send it to the Referee, who will check your claim and: if the player did indeed have it wrong, eliminate them from the game; but if it was right, eliminate you from the game.
+2. To create a flow that will perform Fizz Buzz on the Source
 
-(For #5, you'll possibly need to edit the Wrong message a little -- the Referee needs to know whose play it was AND who is shouting "Wrong")
+3. To "materialse" the flow, printing out the stream to standard out.
+
+4. Now insert something into the flow to limit it to printing five outputs per second
+
+Last modified: Wednesday, 11 May 2016, 2:53 PM
