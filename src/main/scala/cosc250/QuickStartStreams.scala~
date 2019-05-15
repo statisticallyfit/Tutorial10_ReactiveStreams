@@ -1,0 +1,89 @@
+
+//https://doc.akka.io/docs/akka/2.4.4/scala/stream/stream-quickstart.html#stream-quickstart-scala
+
+import java.io.File
+import java.util.concurrent.TimeoutException
+
+import akka.NotUsed
+import akka.actor._
+import akka.stream.scaladsl.{FileIO, Sink, Source}
+import play.api.libs.ws.ahc.AhcWSClient
+import play.api.libs.ws.ning.NingWSClient
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, IOResult}
+import akka.util.ByteString
+
+
+//futures
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try //places default thread pool in scope so Future can be
+// executed asynchronously.
+import scala.concurrent.{Await, Future, Promise, future}
+import scala.concurrent.duration._
+import scala.util.Random
+import scala.util.{Success, Failure}
+
+
+object Basics extends App {
+
+	//Source type = parametrized with two types
+	//First: int = type of the element that the source emits
+	//Second: Notused = signals that running the source may produce some
+	//auxiliary value
+	//NotUsed = when the no auxiliary info is produced.
+	val source: Source[Int, NotUsed] = Source(1 to 100)
+
+	//materializer = factory for stream execution engines = it makes
+	// the streams run.
+	//
+	implicit val system = ActorSystem("QuickStart")
+	implicit val materializer = ActorMaterializer()
+
+
+	//running the source to get the numbers
+	source.runForeach(i => println(i))(materializer)
+
+
+	//Source is just a description of what you wan to run and can be incorporated
+	//into a larger design
+	// Can write it to a file
+
+	//
+	val factorials = source.scan(BigInt(1))((acc, next) => acc * next)
+	val result: Future[IOResult] = factorials.map(num => ByteString(s"$num\n"))
+     	.runWith(FileIO.toFile(new File("factorials.txt")))
+}
+
+
+object Tweets extends App {
+
+	final case class Author(handle: String )
+	final case class Hashtag(name: String)
+
+	final case class Tweet(author: Author, timestamp: Long, body: String) {
+		def hashtags: Set[Hashtag] =
+			body.split(" ").collect { case t if t.startsWith("#") => Hashtag(t) }.toSet
+	}
+
+	val akka = Hashtag("#akka")
+
+
+	//--------------------
+	//In order to prepare our environment by creating an ActorSystem and ActorMaterializer, which will be responsible
+	//for materializing and running the streams we are about to create:
+
+	implicit val system = ActorSystem("reactive-tweets")
+	implicit val materializer = ActorMaterializer()
+
+	
+
+
+	val tweets: Source[Tweet, NotUsed] = Source(List(t1, t2))
+	val authors: Source[Author, NotUsed] = tweets.filter(_.hashtags.contains(akka))
+     	.map(_.author)
+
+	//to materialize and run the computation we need to attach the flow to a sink
+	//that will get the flow running.
+	//To do this: call runWith(sink) on a source
+	authors.runWith(Sink.foreach(println))
+}

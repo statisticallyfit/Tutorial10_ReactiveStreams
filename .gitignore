@@ -1,4 +1,3 @@
-
 *.class
 *.log
 
@@ -6,8 +5,14 @@
 target
 dist
 
-# Test database
-lift_example
+target/*
+ivyrepo/*
+sbtboot/*
+project/.sbtboot/*
+project/.ivy/*
+project/.boot/*
+project/target/*
+project/project/target/*
 
 # Mac
 *.DS_Store
@@ -23,7 +28,6 @@ lift_example
 .project
 .settings
 .target
-
 
 # Vagrant
 .vagrant
