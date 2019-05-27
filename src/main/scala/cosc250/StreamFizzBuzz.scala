@@ -7,7 +7,8 @@ import akka.{Done, NotUsed}
 import cosc250.util.Wait
 
 import scala.concurrent.Future
-
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 /**
   *
   */
@@ -50,7 +51,7 @@ object StreamFizzBuzz extends App {
 
 	// Make a flow to convert a number to fizz buzz values
 	// In = Int, Out = String, Materialized = NotUsed
-	val flow: Flow[Int, String, NotUsed] = Flow[Int].map[String] {
+	val fizzBuzzFlow: Flow[Int, String, NotUsed] = Flow[Int].map[String] {
 		case n if n % 15 == 0 => "FizzBuzz"
 		case n if n % 3 == 0 => "Fizz"
 		case n if n % 5 == 0 => "Buzz"
@@ -63,11 +64,11 @@ object StreamFizzBuzz extends App {
 	 * Let's just stream it to standard out
 	 */
 	println("\nRunning the fizz buzz graph")
-	source.via(flow).to(Sink.foreach(println(_))).run()
+	source.via(fizzBuzzFlow).to(Sink.foreach(println(_))).run()
 
 
 
-	//TUtorial solution way
+	//TUtorial solution way / this acts like throttle
 	val slowFlow: Flow[String, String, NotUsed] = Flow[String].map[String] { x =>
 		try {
 			Thread.sleep(200)
@@ -78,8 +79,8 @@ object StreamFizzBuzz extends App {
 	}
 
 
-	val mid: Source[String, NotUsed] = source.via(flow)
-	val withHose: Source[String, NotUsed] = source.via(flow).via(slowFlow) //mid.via(slowFlow)
+	val mid: Source[String, NotUsed] = source.via(fizzBuzzFlow)
+	val withHose: Source[String, NotUsed] = source.via(fizzBuzzFlow).via(slowFlow) //mid.via(slowFlow)
 
 	println("\nwithHose.runForeach(println(): ")
 	val withSink: Future[Done] = withHose.runForeach(println) //equivalent to withsink3
@@ -90,21 +91,34 @@ object StreamFizzBuzz extends App {
 	println("\nwithHose.to(Sink.foreach(println(_))).run()")
 	val withSink2: NotUsed = withHose.to(Sink.foreach(println(_))).run()
 
-	Thread.sleep(20000) //Wait.hangOn(withSink2)
+	Thread.sleep(2000) //Wait.hangOn(withSink2)
 
 	println("\nwithHose.runWith(Sink.foreach(println(_)))")
 	val withSink3: Future[Done] = withHose.runWith(Sink.foreach(println(_)))
 
 	Wait.hangOn(withSink3)
 
-	val after: Future[Done] = withSink.andThen({case _ => system.terminate() })
-	val after3: Future[Done] = withSink3.andThen({case _ => system.terminate() }) //note - this works too
+	//val after: Future[Done] = withSink.andThen({case _ => system.terminate() })
+	//val after3: Future[Done] = withSink3.andThen({case _ => system.terminate() }) //note - this works too
 
 
+	//Wait.hangOn(after)
+	//Wait.hangOn(after3)
 
 	/*
 	 * And now let's play with backpressure.
 	 * Somewhere in the flow, insert something that will make it only write out 5 numbers per second.
 	 */
 
+	println("\nFive elements per second: ")
+	source.via(fizzBuzzFlow).throttle(5 , 1.second).runForeach(println)
+	/*val sourceAndFlow: Source[String, NotUsed] = source.via(fizzBuzzFlow)
+
+	val fiveElemPerSecSourceAndFlow: Source[String, NotUsed] =
+		sourceAndFlow.throttle(5, 1.second)
+
+	val done: Future[Done] = fiveElemPerSecSourceAndFlow.runForeach(println(_)) //implicit materializer
+	//Wait.hangOn(done)
+*/
+	//done.andThen({case _ => system.terminate() })
 }

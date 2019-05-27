@@ -21,7 +21,7 @@ object Wait {
 	def hangOnS[T](future: Future[T], start: Int = 0,msg: String = ""): Future[T] = {
 		var count = start
 		while(!future.isCompleted){
-			println(s"Slept $count times")
+			//println(s"Slept $count times")
 
 			Thread.sleep(100)
 			count += 1
@@ -42,7 +42,7 @@ object Wait {
 	def hangOn[T](future: Future[T], start: Int = 0): Future[T] = {
 		var count = start
 		while(!future.isCompleted){
-			println(s"Slept $count times")
+			//println(s"Slept $count times")
 
 			Thread.sleep(10)
 			count += 1
